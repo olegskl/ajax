@@ -1,5 +1,5 @@
 /**
- * @fileOverview This file contains an AJAX request handler that is independent of any framework.
+ * @fileOverview This file contains a framework-independent AJAX request handler.
  * @author <a href="mailto:sklyanchuk@gmail.com">Oleg Sklyanchuk</a>
  * @version 0.1.0
  */
@@ -69,7 +69,7 @@ var ajax = {
      * @param {String} method HTTP request method (GET, POST, PUT, DELETE, ...)
      * @param {String} url The target location
      * @param {Object} [params] Optional parameters
-     *    @param {String} [body] Data to send with request. Ignored if GET method is used. Use NULL if no data to send
+     *    @param {String} [params.body] Data to send with request. Ignored if GET method is used. Use NULL if no data to send
      *    @param {Function} [params.onSuccess]
      *    @param {Function} [params.onFailure] 
      *    @param {Boolean} [params.isAsync]
