@@ -1,64 +1,47 @@
 /**
  * @fileOverview This file contains a framework-independent AJAX request handler.
  * @author <a href="mailto:sklyanchuk@gmail.com">Oleg Sklyanchuk</a>
- * @version 0.1.0
+ * @version 0.1.2
+ * @license MIT License
  */
 
-var ajax = {
+/**
+ * The Ajax object.
+ * @constructor
+ */
+
+var Ajax = {
     
     /**
      * Defines if requests should be asynchronous by default.
      * @type {boolean}
      */
     
-    isAsync: true,
+    async: true,
     
     /**
-     * Default onError function.
-     * 
-     * Logs error message to console (if available).
-     * Suggested use is to override this function
-     * with your own error handling procedure.
-     * 
-     * @param {String} msg A message to log
-     * @returns {Void}
-     */
+     * Initiates and issues an XMLHttpRequest with GET method.
+     * @see Ajax.request
+     * @param {String} url The target location.
+     * @param {Object} [params] Optional parameters.
+     * @returns {Object} XMLHttpRequest object
+     */     
     
-    onError: function(msg) {
-        
-        // Log message if console is available:
-        //  - IE requres a check for "window.console" instead of just "console".
-        if (window.console) {
-            console.log(msg);
-        }
-        
+    get: function(url, params) {
+        return this.request('get', url, params);
     },
     
     /**
-     * Default onSuccess function.
-     * 
-     * Triggered on a server response with 2XX status.
-     * Suggested use is to override this function
-     * with your own onSuccess procedure.
-     * 
-     * @param {Object} XMLHttpRequest object
-     * @returns {Void}
-     */
+     * Initiates and issues an XMLHttpRequest with POST method.
+     * @see Ajax.request
+     * @param {String} url The target location.
+     * @param {Object} [params] Optional parameters.
+     * @returns {Object} XMLHttpRequest object
+     */    
     
-    onSuccess: function(XHR) {},
-    
-    /**
-     * Default onFailure function.
-     * 
-     * Triggered on a server response with non-2XX status.
-     * Suggested use is to override this function
-     * with your own onFailure procedure.
-     * 
-     * @param {Object} XMLHttpRequest object
-     * @returns {Void}
-     */
-    
-    onFailure: function(XHR) {},
+    post: function(url, params) {
+        return this.request('post', url, params);
+    },
     
     /**
      * Initiates and issues an XMLHttpRequest.
@@ -70,12 +53,12 @@ var ajax = {
      * @param {String} url The target location
      * @param {Object} [params] Optional parameters
      *    @param {String} [params.body] Data to send with request. Ignored if GET method is used. Use NULL if no data to send
-     *    @param {Function} [params.onSuccess]
-     *    @param {Function} [params.onFailure] 
-     *    @param {Boolean} [params.isAsync]
+     *    @param {Function} [params.onSuccess] A function to execute on a successful response (2XX status code).
+     *    @param {Function} [params.onFailure] A function to execute on an unsuccessful response (non-2XX status code).
+     *    @param {Boolean} [params.async] Defines if the request should be asynchronous.
      * 
-     * @example ajax.request('get', 'http://example.com/api/items', {onSuccess: function(XHR){alert(XHR.status);}});
-     * @example ajax.request('post', 'http://example.com/api/items', {body: 'MyData', onSuccess: function(XHR){alert(XHR.status);}});
+     * @example Ajax.request('get', 'http://example.com/api/items', {onSuccess: function(XHR){alert(XHR.status);}});
+     * @example Ajax.request('post', 'http://example.com/api/items', {body: 'MyData', onSuccess: function(XHR){alert(XHR.status);}});
      * 
      * @returns {Object} XMLHttpRequest object
      */
@@ -88,81 +71,67 @@ var ajax = {
         if (typeof params != 'object' || params == null) {
             params = {};
         }
+            
+        // Create the XMLHttpRequest object:
+        var XHR = this._createXHR();
         
-        try {
+        // Assign a handler for XMLHttpRequest state change events:
+        XHR.onreadystatechange = function() {
             
-            // Create the XMLHttpRequest object:
-            var XHR = this.createXHR();
+            // Response has loaded completely (4 = DONE):
+            if (XHR.readyState != 4) { return; }
             
-            // Assign a handler for XMLHttpRequest state change events:
-            XHR.onreadystatechange = function() {
+            // Check for success (2XX status):
+            if (XHR.status >= 200 && XHR.status < 300) {
                 
-                // Response has loaded completely (4 = DONE):
-                if (XHR.readyState != 4) { return; }
+                // Request is successful (2XX status),
+                // calling onSuccess function (if any):
+                if (typeof params.onSuccess == 'function') {
+                    params.onSuccess(XHR.status, XHR.responseText);
+                }
                 
-                // Check for success (2XX status):
-                if (XHR.status >= 200 && XHR.status < 300) {
-                    
-                    // Request is successful (2XX status),
-                    // calling onSuccess function (if any):
-                    if (typeof params.onSuccess == 'function') {
-                        params.onSuccess(XHR);
-                    } else if (typeof this.onSuccess == 'function') {
-                        this.onSuccess(XHR);
-                    }
-                    
-                } else {
-                    
-                    // Request failed... (non-2XX status),
-                    // calling onFailure function (if any):
-                    if (typeof params.onFailure == 'function') {
-                        params.onFailure(XHR);
-                    } else if (typeof this.onFailure == 'function') {
-                        this.onFailure(XHR);
-                    }
-                    
+            } else {
+                
+                // Request failed... (non-2XX status),
+                // calling onFailure function (if any):
+                if (typeof params.onFailure == 'function') {
+                    params.onFailure(XHR.status, XHR.responseText);
                 }
                 
             }
             
-            // Determine if the request should be asynchronous or not:
-            //  - The option "params.isAsync" must override the global property "this.isAsync"
-            var isAsync = (typeof params.isAsync == 'boolean')
-                ? params.isAsync
-                : this.isAsync;
-            
-            // Initiate the request:
-            //  - If not set, the "method" argument must default to "GET"
-            //  - We rely on XHR.open method to check validity of its arguments
-            XHR.open(method || 'get', url, isAsync);
-            
-            // Send the request:
-            //  - The "body" option will be overridden with NULL if method is "GET"
-            XHR.send(params.body);
-            
-        } catch(e) {
-            
-            // An error occurred...
-            // attempt to call the onError hook:
-            if (typeof this.onError == 'function') {
-                this.onError(e);
-            }
         }
         
+        // Determine if the request should be asynchronous or not:
+        //  - The option "params.async" overrides the global property "this.async"
+        var async = (typeof params.async == 'boolean')
+            ? params.async
+            : this.async;
+        
+        // Initiate the request:
+        //  - If not set, the "method" argument must default to "GET"
+        //  - We rely on XHR.open method to check validity of its arguments
+        XHR.open(method, url, async);
+        
+        // Send the request:
+        //  - The "body" option will be overridden with NULL if method is "GET"
+        XHR.send(params.body);
+        
         // Return XHR to provide a possibility
-        // of calling .abort() or other methods:
+        // to call .abort() or other methods:
         return XHR;
         
     },
     
     /**
-     *    Creates and returns a cross-browser XMLHttpRequest object
-     *    
-     *    @throws {Exception}
-     *    @returns {Object} XMLHttpRequest object
+     * Creates and returns a cross-browser XMLHttpRequest object
+     * 
+     * @private
+     * @throws {Exception}
+     * @returns {Object} XMLHttpRequest object
      */
     
-    createXHR: function() {
+    _createXHR: function() {
         
         try {
             
