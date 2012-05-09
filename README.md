@@ -8,11 +8,25 @@ Usage
 
 Request a list of items by issuing a GET request
 
-    ajax.request('get', 'http://example.com/api/items', {success: successFunc});
+    ajax.get('http://example.com/api/items', {
+        success: successFunc,
+        failure: failureFunc
+    });
 
 Create a new item by issuing a POST request
 
-    ajax.request('post', 'http://example.com/api/items', {body: 'myData', success: successFunc});
+    ajax.post('http://example.com/api/items', {
+        body: 'my data',
+        success: successFunc,
+        failure: failureFunc
+    });
+
+Create a new item by issuing a DELETE request
+
+    ajax.request('delete', 'http://example.com/api/items/3', {
+        success: successFunc,
+        failure: failureFunc
+    });
 
 Browser support
 ---------------
