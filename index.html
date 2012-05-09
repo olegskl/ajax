@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ajax</title>
+</head>
+<body>
+    <script src="ajax.js"></script>
+    <script type="text/javascript">
+
+        /* -------------------------- UNNECESSARY --------------------------- */
+
+        // Console could be undefined in IE:
+        var console = console || function (message) {
+            document.write(message);
+        }
+
+        /* -------------------------- PREPARATION --------------------------- */
+
+        // Success handler:
+        var success = function(status, response) {
+            console.log('Success ' + status + ' ' + response);
+        }
+        // Failure handler:
+        var failure = function(status, response) {
+            console.log('Failure ' + status + ' ' + response);
+        }
+        
+        /* --------------------------- REQUESTS ----------------------------- */
+        
+		// Request 1 - GET:
+        ajax.get('test.php?a=b', {
+            success: success,
+            failure: failure
+        });
+
+		// Request 2 - POST:
+        ajax.post('test.php?a=c', {
+            body: 'Hello world! This is a POST request.',
+            success: success,
+            failure: failure
+        });
+
+		// Request 3 - PUT:
+        ajax.request('put', 'test.php?a=d', {
+            body: 'Hello world! This is a PUT request.',
+            success: success,
+            failure: failure
+        });
+
+		// Request 4 - DELETE:
+        ajax.request('delete', 'test.php?a=e', {
+            success: success,
+            failure: failure
+        });
+
+    </script>
+</body>
+</html>
